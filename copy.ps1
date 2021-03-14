@@ -11,16 +11,21 @@ Inspired from https://blog.daiyanyingyu.uk/2018/03/20/powershell-mtp/
  This command will compare all !PStatSum_*.TXT in folder \\MyPC\temp\SDPs\ClusterReports
 
 .EXAMPLE
-.\copy.ps1 -MTPSourcePath WillyMobile\Card\DCIM\Camera -TargetPath D:\PhoneBackup\Camera
- This will copy files from the camera folder on the phone to the target path and segregate by month.
- 
-.LINK
-https://plusontech.com/wp-admin/post.php?post=182&action=edit
-https://github.com/WillyMoselhy/Weekend-Projects
+.\copy.ps1 -MTPSourcePath "Galaxy S9\Phone\DCIM\Camera" -TargetPath "D:\test"
+This will copy files from the camera folder on the phone to the target path.
+
+```PowerShell
+cd D:\Repository\phone-2-backup\;
+Set-ExecutionPolicy RemoteSigned -forced;
+.\copy.ps1 -MTPSourcePath "Galaxy S9\Phone\DCIM\Camera" -TargetPath "D:\Backup\Telefon\Camera";
+.\copy.ps1 -MTPSourcePath "Galaxy S9\Phone\DCIM\Screenshots" -TargetPath "D:\Backup\Telefon\Screenshots";
+.\copy.ps1 -MTPSourcePath "Galaxy S9\Phone\Voice Recorder" -TargetPath "D:\Backup\Telefon\Voice Recorder"
+```
+
 #>
 
 Param(
-    # Folder path on the MTP device. e.g. WillyMobile\Card\DCIM\Camera
+    # Folder path on the MTP device. e.g. "Galaxy S9\Card\DCIM\Camera"
     [Parameter(Mandatory = $true)]
     [string] $MTPSourcePath,
     
@@ -69,8 +74,6 @@ $TargetFolder = Get-Item -Path $TargetPath
 # File names follow this pattern yyyyMMdd_HHmmss e.g. 20200104_231922.jpg
 # Files that do not match this pattern are excluded and reported
 
-$FileNameRegex = "^(?<Year>\d{4})(?<Month>\d{2})(?<Day>\d{2})_(?<Hour>\d{2})(?<Minute>\d{2})(?<Second>\d{2}).*\.(?<Extension>.+)$" # https://regexr.com/45sdj
-
 $ProgressActivityName = "Copying files from '$MTPSourcePath' to '$TargetPath'"
 
 $SkippedFiles = @() 
@@ -82,35 +85,23 @@ foreach ($File in ($CameraItems |Sort-Object -Property Name) ){
     Write-Progress -Activity $ProgressActivityName -Status "Working on it" -CurrentOperation "Copying: $($File.Name) - Finished $CopiedFilesCount / $($CameraItems.count)" -PercentComplete (($CopiedFilesCount/$CameraItems.count)*100)
     $CopiedFilesCount++
 
-    if($File.Name -notmatch $FileNameRegex){
-        $SkippedFiles += [PSCustomObject]@{
-            Name       = $File.Name
-            TargetPath = $null
-            Reason     = "Pattern mismatch"
-        }
-        Write-Warning "$($File.Name) is skipped because of pattern"
-    }
+	$YearMonthFolder = New-Item -Path "$($TargetFolder.FullName)" -ItemType Directory -Force
 
-    else{
-        $YearMonth = "{0}{1}" -f $Matches.Year,$Matches.Month
-        $YearMonthFolder = New-Item -Path "$($TargetFolder.FullName)\$YearMonth" -ItemType Directory -Force
-
-        $TargetFilePath = Join-Path -Path $YearMonthFolder -ChildPath $File.Name
-        if(Test-Path -Path $TargetFilePath){ # A file with the same name already exists
-            $SkippedFiles += [PSCustomObject]@{
-                Name       = $File.Name
-                TargetPath = $TargetFilePath
-                Reason     = "Duplicate file name"
-            }
-            Write-Warning "$($File.Name) is skipped due to duplicate file name"
-        }
-        else{
-            # >>>>  This is where the magic happens! <<<< #
-            $TargetFolderShell = $Shell.NameSpace($YearMonthFolder.FullName).self
-            
-            $TargetFolderShell.GetFolder.CopyHere($File)
-        }        
-    } 
+	$TargetFilePath = Join-Path -Path $YearMonthFolder -ChildPath $File.Name
+	if(Test-Path -Path $TargetFilePath){ # A file with the same name already exists
+		$SkippedFiles += [PSCustomObject]@{
+			Name       = $File.Name
+			TargetPath = $TargetFilePath
+			Reason     = "Duplicate file name"
+		}
+		Write-Warning "$($File.Name) is skipped due to duplicate file name"
+	}
+	else{
+		# >>>>  This is where the magic happens! <<<< #
+		$TargetFolderShell = $Shell.NameSpace($YearMonthFolder.FullName).self
+		
+		$TargetFolderShell.GetFolder.CopyHere($File)
+	}        
 }
 
 #Here is a nice view of the files that were not copied!
