@@ -11,7 +11,7 @@ Inspired from https://blog.daiyanyingyu.uk/2018/03/20/powershell-mtp/
  This command will compare all !PStatSum_*.TXT in folder \\MyPC\temp\SDPs\ClusterReports
 
 .EXAMPLE
-.\Copy-MTPCameraByMonth.ps1 -MTPSourcePath WillyMobile\Card\DCIM\Camera -TargetPath D:\PhoneBackup\Camera
+.\copy.ps1 -MTPSourcePath WillyMobile\Card\DCIM\Camera -TargetPath D:\PhoneBackup\Camera
  This will copy files from the camera folder on the phone to the target path and segregate by month.
  
 .LINK
